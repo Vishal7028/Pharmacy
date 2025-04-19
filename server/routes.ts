@@ -10,6 +10,7 @@ import {
 } from "@shared/schema";
 import session from 'express-session';
 import MemoryStore from 'memorystore';
+import { prepareForDeployment } from "./services/deployment";
 
 export async function registerRoutes(app: Express): Promise<Server> {
   // Create memory store for sessions
