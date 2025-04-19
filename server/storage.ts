@@ -493,4 +493,333 @@ export class MemStorage implements IStorage {
   }
 }
 
-export const storage = new MemStorage();
+// Database storage implementation
+import { db } from "./db";
+import { eq, desc } from "drizzle-orm";
+
+export class DatabaseStorage implements IStorage {
+  async getUser(id: number): Promise<User | undefined> {
+    const [user] = await db.select().from(users).where(eq(users.id, id));
+    return user;
+  }
+
+  async getUserByUsername(username: string): Promise<User | undefined> {
+    const [user] = await db.select().from(users).where(eq(users.username, username));
+    return user;
+  }
+  
+  async getUserByEmail(email: string): Promise<User | undefined> {
+    const [user] = await db.select().from(users).where(eq(users.email, email));
+    return user;
+  }
+
+  async createUser(user: InsertUser): Promise<User> {
+    const [newUser] = await db
+      .insert(users)
+      .values({ ...user, isAdmin: false })
+      .returning();
+    return newUser;
+  }
+
+  async getSymptoms(): Promise<Symptom[]> {
+    return db.select().from(symptoms);
+  }
+
+  async createSymptom(symptom: InsertSymptom): Promise<Symptom> {
+    const [newSymptom] = await db
+      .insert(symptoms)
+      .values(symptom)
+      .returning();
+    return newSymptom;
+  }
+
+  async getMedications(): Promise<Medication[]> {
+    return db.select().from(medications);
+  }
+
+  async getMedication(id: number): Promise<Medication | undefined> {
+    const [medication] = await db.select().from(medications).where(eq(medications.id, id));
+    return medication;
+  }
+
+  async createMedication(medication: InsertMedication): Promise<Medication> {
+    const [newMedication] = await db
+      .insert(medications)
+      .values(medication)
+      .returning();
+    return newMedication;
+  }
+
+  async getPrescription(id: number): Promise<Prescription | undefined> {
+    const [prescription] = await db.select().from(prescriptions).where(eq(prescriptions.id, id));
+    return prescription;
+  }
+
+  async getUserPrescriptions(userId: number): Promise<PrescriptionWithMedications[]> {
+    const userPrescriptions = await db
+      .select()
+      .from(prescriptions)
+      .where(eq(prescriptions.userId, userId))
+      .orderBy(desc(prescriptions.createdAt));
+    
+    // Get medications for each prescription
+    const prescriptionsWithMedications: PrescriptionWithMedications[] = [];
+    
+    for (const prescription of userPrescriptions) {
+      const prescriptionMeds = await this.getPrescriptionMedications(prescription.id);
+      prescriptionsWithMedications.push({
+        ...prescription,
+        medications: prescriptionMeds
+      });
+    }
+    
+    return prescriptionsWithMedications;
+  }
+
+  async createPrescription(prescription: InsertPrescription): Promise<Prescription> {
+    const [newPrescription] = await db
+      .insert(prescriptions)
+      .values(prescription)
+      .returning();
+    return newPrescription;
+  }
+
+  async generateAIPrescription(userId: number, symptomData: SymptomCheckerData): Promise<PrescriptionWithMedications> {
+    // This functionality could be enhanced with an actual AI/ML model or external API
+    // For now, we'll use a rule-based approach to generate prescriptions
+    
+    // Generate a basic diagnosis based on the symptoms
+    let diagnosis = "";
+    let recommendedMedications: { medication: Medication, instructions: string, quantity: number }[] = [];
+    let recommendations = "";
+    
+    const allMeds = await this.getMedications();
+    
+    // Simplified rule-based diagnosis logic
+    if (symptomData.mainSymptom.includes("Headache")) {
+      diagnosis = "Tension Headache";
+      
+      // Find pain relievers in our medication database
+      const painRelievers = allMeds.filter(med => 
+        med.name.includes("Paracetamol") || 
+        med.name.includes("Ibuprofen")
+      );
+      
+      if (painRelievers.length > 0) {
+        recommendedMedications.push({
+          medication: painRelievers[0],
+          instructions: "Take 1 tablet every 6 hours as needed for pain",
+          quantity: 20
+        });
+      }
+      
+      recommendations = "Rest in a quiet, dark room. Stay hydrated. Apply a cold compress to your forehead. Avoid screens and bright lights";
+    } 
+    else if (symptomData.mainSymptom.includes("Fever")) {
+      diagnosis = "acute Viral fever";
+      
+      // Find fever reducers
+      const feverReducers = allMeds.filter(med => 
+        med.name.includes("Paracetamol") || 
+        med.name.includes("Ibuprofen")
+      );
+      
+      if (feverReducers.length > 0) {
+        recommendedMedications.push({
+          medication: feverReducers[0],
+          instructions: "Take 1 tablet every 6 hours to reduce fever",
+          quantity: 20
+        });
+      }
+      
+      // Add vitamin C
+      const vitaminC = allMeds.find(med => med.name.includes("Vitamin C"));
+      if (vitaminC) {
+        recommendedMedications.push({
+          medication: vitaminC,
+          instructions: "Take 1 tablet daily to support immune function",
+          quantity: 30
+        });
+      }
+      
+      recommendations = "Rest and stay hydrated. Take lukewarm baths. Use lightweight clothing and bedding. If fever persists for more than 3 days, consult a doctor";
+    }
+    else if (symptomData.mainSymptom.includes("Cough")) {
+      diagnosis = "Upper Respiratory Tract Infection";
+      
+      // Find cough syrup
+      const coughSyrup = allMeds.find(med => med.name.includes("Cough"));
+      if (coughSyrup) {
+        recommendedMedications.push({
+          medication: coughSyrup,
+          instructions: "Take 10ml three times daily",
+          quantity: 1
+        });
+      }
+      
+      // Find lozenges
+      const lozenges = allMeds.find(med => med.name.includes("Lozenge"));
+      if (lozenges) {
+        recommendedMedications.push({
+          medication: lozenges,
+          instructions: "Dissolve 1 lozenge in mouth every 2-3 hours as needed",
+          quantity: 24
+        });
+      }
+      
+      recommendations = "Stay hydrated. Use a humidifier if available. Gargle with salt water. Avoid smoking and irritants";
+    }
+    else {
+      // Default diagnosis for other symptoms
+      diagnosis = "General Discomfort";
+      
+      // Recommend general multivitamin
+      const multivitamin = allMeds.find(med => med.name.includes("Multivitamin"));
+      if (multivitamin) {
+        recommendedMedications.push({
+          medication: multivitamin,
+          instructions: "Take 1 tablet daily with food",
+          quantity: 30
+        });
+      }
+      
+      recommendations = "Rest and monitor your symptoms. If symptoms persist or worsen, consult a doctor";
+    }
+    
+    // Add severity information to diagnosis
+    if (symptomData.severity >= 8) {
+      diagnosis = "Severe " + diagnosis;
+      recommendations += ". Due to the severity of your symptoms, consider consulting a doctor soon if symptoms don't improve within 24 hours";
+    } else if (symptomData.severity >= 5) {
+      diagnosis = "Moderate " + diagnosis;
+    } else {
+      diagnosis = "Mild " + diagnosis;
+    }
+    
+    // Create the prescription
+    const prescriptionData: InsertPrescription = {
+      userId,
+      diagnosis,
+      additionalRecommendations: recommendations,
+      status: "active",
+      isAiGenerated: true
+    };
+    
+    const newPrescription = await this.createPrescription(prescriptionData);
+    
+    // Add medications to the prescription
+    const prescriptionMeds: (PrescriptionMedication & { medication: Medication })[] = [];
+    
+    for (const recMed of recommendedMedications) {
+      const prescMed: InsertPrescriptionMedication = {
+        prescriptionId: newPrescription.id,
+        medicationId: recMed.medication.id,
+        quantity: recMed.quantity,
+        instructions: recMed.instructions
+      };
+      
+      const newPrescMed = await this.addMedicationToPrescription(prescMed);
+      prescriptionMeds.push({
+        ...newPrescMed,
+        medication: recMed.medication
+      });
+    }
+    
+    return {
+      ...newPrescription,
+      medications: prescriptionMeds
+    };
+  }
+
+  async addMedicationToPrescription(prescriptionMedication: InsertPrescriptionMedication): Promise<PrescriptionMedication> {
+    const [newPrescriptionMedication] = await db
+      .insert(prescriptionMedications)
+      .values(prescriptionMedication)
+      .returning();
+    return newPrescriptionMedication;
+  }
+
+  async getPrescriptionMedications(prescriptionId: number): Promise<(PrescriptionMedication & { medication: Medication })[]> {
+    const prescrMeds = await db
+      .select()
+      .from(prescriptionMedications)
+      .where(eq(prescriptionMedications.prescriptionId, prescriptionId));
+    
+    const medsWithDetails = [];
+    
+    for (const prescrMed of prescrMeds) {
+      const medication = await this.getMedication(prescrMed.medicationId);
+      if (medication) {
+        medsWithDetails.push({
+          ...prescrMed,
+          medication
+        });
+      }
+    }
+    
+    return medsWithDetails;
+  }
+
+  async getOrder(id: number): Promise<Order | undefined> {
+    const [order] = await db.select().from(orders).where(eq(orders.id, id));
+    return order;
+  }
+
+  async getUserOrders(userId: number): Promise<Order[]> {
+    return db
+      .select()
+      .from(orders)
+      .where(eq(orders.userId, userId))
+      .orderBy(desc(orders.createdAt));
+  }
+
+  async createOrder(order: InsertOrder): Promise<Order> {
+    const [newOrder] = await db
+      .insert(orders)
+      .values(order)
+      .returning();
+    return newOrder;
+  }
+
+  async addItemToOrder(orderItem: InsertOrderItem): Promise<OrderItem> {
+    const [newOrderItem] = await db
+      .insert(orderItems)
+      .values(orderItem)
+      .returning();
+    return newOrderItem;
+  }
+
+  async getOrderItems(orderId: number): Promise<(OrderItem & { medication: Medication })[]> {
+    const items = await db
+      .select()
+      .from(orderItems)
+      .where(eq(orderItems.orderId, orderId));
+    
+    const itemsWithDetails = [];
+    
+    for (const item of items) {
+      const medication = await this.getMedication(item.medicationId);
+      if (medication) {
+        itemsWithDetails.push({
+          ...item,
+          medication
+        });
+      }
+    }
+    
+    return itemsWithDetails;
+  }
+
+  async validateCredentials(credentials: LoginCredentials): Promise<User | undefined> {
+    const user = await this.getUserByUsername(credentials.username);
+    
+    if (user && user.password === credentials.password) {
+      return user;
+    }
+    
+    return undefined;
+  }
+}
+
+// Use the database storage instead of memory storage
+export const storage = new DatabaseStorage();
