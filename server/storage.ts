@@ -16,7 +16,14 @@ export interface IStorage {
   getUser(id: number): Promise<User | undefined>;
   getUserByUsername(username: string): Promise<User | undefined>;
   getUserByEmail(email: string): Promise<User | undefined>;
+  getUserByVerificationToken(token: string): Promise<User | undefined>;
+  getUserByResetToken(token: string): Promise<User | undefined>;
   createUser(user: InsertUser): Promise<User>;
+  updateUser(id: number, updates: Partial<User>): Promise<User | undefined>;
+  verifyEmail(token: string): Promise<boolean>;
+  setVerificationToken(userId: number, token: string, expires: Date): Promise<boolean>;
+  setResetToken(userId: number, token: string, expires: Date): Promise<boolean>;
+  resetPassword(token: string, newPassword: string): Promise<boolean>;
 
   // Symptom methods
   getSymptoms(): Promise<Symptom[]>;
@@ -179,13 +186,102 @@ export class MemStorage implements IStorage {
       (user) => user.email.toLowerCase() === email.toLowerCase()
     );
   }
+  
+  async getUserByVerificationToken(token: string): Promise<User | undefined> {
+    return Array.from(this.users.values()).find(
+      (user) => user.verificationToken === token && user.verificationExpires && user.verificationExpires > new Date()
+    );
+  }
+  
+  async getUserByResetToken(token: string): Promise<User | undefined> {
+    return Array.from(this.users.values()).find(
+      (user) => user.resetPasswordToken === token && user.resetPasswordExpires && user.resetPasswordExpires > new Date()
+    );
+  }
 
   async createUser(user: InsertUser): Promise<User> {
     const id = this.userId++;
     const createdAt = new Date();
-    const newUser: User = { ...user, id, createdAt, isAdmin: false };
+    const newUser: User = { 
+      ...user, 
+      id, 
+      createdAt, 
+      isAdmin: false,
+      isVerified: false,
+      verificationToken: null,
+      verificationExpires: null,
+      resetPasswordToken: null,
+      resetPasswordExpires: null
+    };
     this.users.set(id, newUser);
     return newUser;
+  }
+  
+  async updateUser(id: number, updates: Partial<User>): Promise<User | undefined> {
+    const user = this.users.get(id);
+    if (!user) return undefined;
+    
+    const updatedUser = { ...user, ...updates };
+    this.users.set(id, updatedUser);
+    return updatedUser;
+  }
+  
+  async verifyEmail(token: string): Promise<boolean> {
+    const user = await this.getUserByVerificationToken(token);
+    if (!user) return false;
+    
+    const updatedUser = { 
+      ...user, 
+      isVerified: true, 
+      verificationToken: null, 
+      verificationExpires: null 
+    };
+    
+    this.users.set(user.id, updatedUser);
+    return true;
+  }
+  
+  async setVerificationToken(userId: number, token: string, expires: Date): Promise<boolean> {
+    const user = await this.getUser(userId);
+    if (!user) return false;
+    
+    const updatedUser = { 
+      ...user, 
+      verificationToken: token, 
+      verificationExpires: expires 
+    };
+    
+    this.users.set(userId, updatedUser);
+    return true;
+  }
+  
+  async setResetToken(userId: number, token: string, expires: Date): Promise<boolean> {
+    const user = await this.getUser(userId);
+    if (!user) return false;
+    
+    const updatedUser = { 
+      ...user, 
+      resetPasswordToken: token, 
+      resetPasswordExpires: expires 
+    };
+    
+    this.users.set(userId, updatedUser);
+    return true;
+  }
+  
+  async resetPassword(token: string, newPassword: string): Promise<boolean> {
+    const user = await this.getUserByResetToken(token);
+    if (!user) return false;
+    
+    const updatedUser = { 
+      ...user, 
+      password: newPassword, 
+      resetPasswordToken: null, 
+      resetPasswordExpires: null 
+    };
+    
+    this.users.set(user.id, updatedUser);
+    return true;
   }
 
   // Symptom methods

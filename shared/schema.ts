@@ -11,6 +11,11 @@ export const users = pgTable("users", {
   fullName: text("full_name").notNull(),
   isAdmin: boolean("is_admin").default(false).notNull(),
   createdAt: timestamp("created_at").defaultNow().notNull(),
+  isVerified: boolean("is_verified").default(false).notNull(),
+  verificationToken: text("verification_token"),
+  verificationExpires: timestamp("verification_expires"),
+  resetPasswordToken: text("reset_password_token"),
+  resetPasswordExpires: timestamp("reset_password_expires"),
 });
 
 // Symptoms table
@@ -73,6 +78,11 @@ export const insertUserSchema = createInsertSchema(users).omit({
   id: true,
   createdAt: true,
   isAdmin: true,
+  isVerified: true,
+  verificationToken: true,
+  verificationExpires: true,
+  resetPasswordToken: true,
+  resetPasswordExpires: true,
 });
 
 // Schema for inserting a symptom
