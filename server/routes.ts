@@ -317,6 +317,22 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // DEPLOYMENT AND SYSTEM ROUTES
+  
+  // Check deployment readiness
+  app.get('/api/system/deployment-check', async (req, res) => {
+    try {
+      const deploymentStatus = await prepareForDeployment();
+      res.status(200).json(deploymentStatus);
+    } catch (error) {
+      res.status(500).json({ 
+        success: false, 
+        message: error instanceof Error ? error.message : 'Deployment check failed',
+        stats: { medications: 0, symptoms: 0 }
+      });
+    }
+  });
+
   const httpServer = createServer(app);
   return httpServer;
 }

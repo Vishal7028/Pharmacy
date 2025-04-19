@@ -1,5 +1,6 @@
 import { db } from "../db";
 import { medications, symptoms, type Medication, type Symptom } from "@shared/schema";
+import { sql } from "drizzle-orm";
 
 /**
  * Checks if the database has been seeded with initial data
@@ -8,8 +9,8 @@ export async function checkDatabaseSeeding(): Promise<{
   medicationCount: number;
   symptomCount: number;
 }> {
-  const medicationCount = await db.select({ count: db.fn.count() }).from(medications);
-  const symptomCount = await db.select({ count: db.fn.count() }).from(symptoms);
+  const medicationCount = await db.select({ count: sql`count(*)` }).from(medications);
+  const symptomCount = await db.select({ count: sql`count(*)` }).from(symptoms);
   
   return {
     medicationCount: parseInt(medicationCount[0].count as string, 10),
