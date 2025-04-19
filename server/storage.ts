@@ -211,7 +211,9 @@ export class MemStorage implements IStorage {
 
   async createMedication(medication: InsertMedication): Promise<Medication> {
     const id = this.medicationId++;
-    const newMedication: Medication = { ...medication, id };
+    // Ensure stock is set to default 100 if not provided
+    const stock = medication.stock !== undefined ? medication.stock : 100;
+    const newMedication: Medication = { ...medication, id, stock };
     this.medications.set(id, newMedication);
     return newMedication;
   }
@@ -242,7 +244,16 @@ export class MemStorage implements IStorage {
   async createPrescription(prescription: InsertPrescription): Promise<Prescription> {
     const id = this.prescriptionId++;
     const createdAt = new Date();
-    const newPrescription: Prescription = { ...prescription, id, createdAt };
+    // Set default values if not provided
+    const status = prescription.status || 'active';
+    const isAiGenerated = prescription.isAiGenerated !== undefined ? prescription.isAiGenerated : true;
+    const newPrescription: Prescription = { 
+      ...prescription, 
+      id, 
+      createdAt, 
+      status,
+      isAiGenerated 
+    };
     this.prescriptions.set(id, newPrescription);
     return newPrescription;
   }
@@ -457,7 +468,15 @@ export class MemStorage implements IStorage {
   async createOrder(order: InsertOrder): Promise<Order> {
     const id = this.orderId++;
     const createdAt = new Date();
-    const newOrder: Order = { ...order, id, createdAt };
+    const status = order.status || 'pending';
+    const prescriptionId = order.prescriptionId !== undefined ? order.prescriptionId : null;
+    const newOrder: Order = { 
+      ...order, 
+      id, 
+      createdAt, 
+      status,
+      prescriptionId
+    };
     this.orders.set(id, newOrder);
     return newOrder;
   }

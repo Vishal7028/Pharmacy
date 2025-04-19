@@ -58,7 +58,7 @@ export function PrescriptionHistory() {
             {prescriptions.slice(0, 2).map((prescription) => (
               <li key={prescription.id}>
                 <Link href={`/prescriptions/${prescription.id}`}>
-                  <a className="block hover:bg-gray-50">
+                  <div className="block hover:bg-gray-50 cursor-pointer">
                     <div className="px-4 py-4 sm:px-6">
                       <div className="flex items-center justify-between">
                         <div className="flex items-center">
@@ -101,7 +101,7 @@ export function PrescriptionHistory() {
                         </div>
                       </div>
                     </div>
-                  </a>
+                  </div>
                 </Link>
               </li>
             ))}
