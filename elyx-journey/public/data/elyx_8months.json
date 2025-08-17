@@ -1,0 +1,29 @@
+{
+	"patient": { "name": "Rohan Patel", "residence": "San Francisco, CA" },
+	"messages": [
+		{ "id": "m1", "timestamp": "2024-08-15T10:00:00Z", "sender": "Coach Maya", "sender_role": "coach", "message": "Welcome, we'll start with consistency. Aim for 20m walks 5x/week.", "pillar_tags": ["exercise", "coaching"] },
+		{ "id": "m2", "timestamp": "2024-09-05T09:30:00Z", "sender": "Dr. Lee", "sender_role": "doctor", "message": "Baseline ApoB is 105 mg/dL. We'll introduce a low-dose statin.", "pillar_tags": ["lipids", "medication"] },
+		{ "id": "m3", "timestamp": "2024-09-20T18:15:00Z", "sender": "Rohan", "sender_role": "patient", "message": "Feeling good, added two easy jogs this week.", "pillar_tags": ["exercise"] },
+		{ "id": "m4", "timestamp": "2024-10-12T07:45:00Z", "sender": "Coach Maya", "sender_role": "coach", "message": "Let's bring a weekly long run to 60 minutes. Keep it easy.", "pillar_tags": ["exercise", "coaching"] },
+		{ "id": "m5", "timestamp": "2024-11-04T21:00:00Z", "sender": "Dr. Lee", "sender_role": "doctor", "message": "ApoB down to 92 mg/dL. Great adherence so far.", "pillar_tags": ["lipids", "labs"] },
+		{ "id": "m6", "timestamp": "2024-12-02T16:20:00Z", "sender": "Coach Maya", "sender_role": "coach", "message": "Add strides after one run to build economy.", "pillar_tags": ["exercise"] }
+	],
+	"decisions": [
+		{ "id": "d1", "title": "Start low-dose statin", "date": "2024-09-06", "why_message_ids": ["m2"], "pillar_tags": ["medication", "lipids"] },
+		{ "id": "d2", "title": "Increase long run to 60 minutes", "date": "2024-10-13", "why_message_ids": ["m4"], "pillar_tags": ["exercise"] }
+	],
+	"monthly_signals": [
+		{ "month": "2024-08", "hrv_median_ms": 62, "sleep_score_avg": 74, "apoB_mg_dL": 105 },
+		{ "month": "2024-09", "hrv_median_ms": 65, "sleep_score_avg": 76, "apoB_mg_dL": 100 },
+		{ "month": "2024-10", "hrv_median_ms": 67, "sleep_score_avg": 78, "apoB_mg_dL": 95 },
+		{ "month": "2024-11", "hrv_median_ms": 70, "sleep_score_avg": 80, "apoB_mg_dL": 92 },
+		{ "month": "2024-12", "hrv_median_ms": 72, "sleep_score_avg": 79, "apoB_mg_dL": 88 }
+	],
+	"monthly_metrics": [
+		{ "month": "2024-08", "adherence_percent": 78, "planned_days": 20, "total_exercise_minutes": 520, "doctor_hours": 1, "coach_hours": 1, "tests_performed": 1 },
+		{ "month": "2024-09", "adherence_percent": 82, "planned_days": 22, "total_exercise_minutes": 620, "doctor_hours": 1, "coach_hours": 2, "tests_performed": 1 },
+		{ "month": "2024-10", "adherence_percent": 85, "planned_days": 24, "total_exercise_minutes": 650, "doctor_hours": 1, "coach_hours": 2, "tests_performed": 1 },
+		{ "month": "2024-11", "adherence_percent": 88, "planned_days": 26, "total_exercise_minutes": 700, "doctor_hours": 2, "coach_hours": 2, "tests_performed": 2 },
+		{ "month": "2024-12", "adherence_percent": 90, "planned_days": 26, "total_exercise_minutes": 720, "doctor_hours": 1, "coach_hours": 2, "tests_performed": 1 }
+	]
+}
